@@ -34,10 +34,6 @@ believe it is out-of-scope and budget for the class. Thus, it is possible that m
 Repository: <https://github.com/psych251/rubin2025/tree/main>
 Original Paper: <https://github.com/psych251/rubin2025/blob/main/original_paper/s41562-025-02247-w.pdf> 
 
-A short justification for your choice of experiment in terms of your research interests or research program (1 paragraph). This justification should tell us why you chose this particular result.
-A description of the stimuli and procedures that will be required to conduct this experiment, and what the challenges will be (1-2 paragraphs).
-A link to the repository and to the original paper (as hosted in your repo). The goal is that we should be able to click on these links and review that your repo is formatted right and look at the original paper. 
-
 ## Methods
 
 ### Power Analysis
