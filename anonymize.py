@@ -33,13 +33,14 @@ def anonymize_data_file(file_path):
                 indices_to_drop.append(i)
 
         anon_file_path = file_path.replace(".csv", "-anon.csv")
-        with open(anon_file_path, "w") as f_out:
+        with open(anon_file_path, "w", newline="") as f_out:
+            writer = csv.writer(f_out)
             f_in.seek(0)
             for row in reader:
                 cols_to_keep = [
                     row[i] for i in range(len(row)) if i not in indices_to_drop
                 ]
-                f_out.write(",".join(cols_to_keep) + "\n")
+                writer.writerow(cols_to_keep)
 
 
 def get_raw_data_files(root_dir):
