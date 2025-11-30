@@ -42,18 +42,18 @@ powers <- list(.80, .90, .95)
 ## power analyses for t-tests with effect size reported in original paper
 for (power in powers) {
   print(power)
-  print(pwr.t.test(d = d_original, power = power, type = "two.sample", alternative = "greater"))
+  print(pwr.t.test(d = d_original, power = power, type = "two.sample"))
 }
 
 for (power in powers) {
   print(power)
-  print(pwr.t.test(d = d_conservative, power = power, type = "two.sample", alternative = "greater"))
+  print(pwr.t.test(d = d_conservative, power = power, type = "two.sample"))
 }
 ```
 
 
 ### Planned Sample
-Based on the power analyses for the more conservative effect size (Cohen's *d* = .30), I will collect data from 276 participants and data collection will stop once complete data from all 276 participants has been collected from Prolific. The experiment should take about 2-3 minutes to complete.
+Based on the power analyses for the more conservative effect size (Cohen's *d* = .30), I will collect data from 350 participants and data collection will stop once complete data from all 350 participants has been collected from Prolific. The experiment should take about 3-4 minutes to complete.
 
 ### Materials
 The participants are asked to describe an emotional experience and then showed a response generated using a large language model (LLMs). Given the stochastic nature of LLMs and the different inputs that participants provide, the responses the model provides will vary. Nonetheless, we use the prompt provided by the authors in the SI when generating responses. 
@@ -66,7 +66,7 @@ We follow the procedure as described in the original article as follows:
 "We told the participants they were paired with either an AI or another participant. The participants shared a recent emotional experience and waited for 60 seconds; they were told either that the AI was generating a response or that the other participant was writing one, depending on the experimental condition. Participants in both conditions were then shown an AI-generated response, with the AI having been prompted to respond to their specific experience and include all three aspects of empathy." 
 
 ### Analysis Plan
-First, we will exclude participants who fail the attention check question in the task. Next, following Rubin et al., we removed "any participants that were more than 2.5 standard deviations away from the mean of the dependent variable for that analysis" 
+First, we will exclude participants who fail the attention check question in the task and those who do not provide an emotional response, which we will manually validate. Next, following Rubin et al., we removed "any participants that were more than 2.5 standard deviations away from the mean of the dependent variable for that analysis" 
 and ensured that "all independent categorical variables were effect-coded."
 
 The first analysis of interest is comparing which response participants found more empathic by conducting a Welch's t-test on the general empathy question between conditions. 
@@ -77,7 +77,7 @@ Finally, to see whether condition affected different types of empathy (e.g., cog
 
 ### Differences from Original Study
 
-There are two main differences. First, we will be using a different LLM to generate the responses; however, this change should not produce material differences given that it is a model with similar capabilities to that used in the original study. Furthermore, in the article, they also performed the same study using an open-source Llama model to find similar results. Second, we are recruiting a much smaller sample size in comparison to the original study, which had 725 participants.
+There are three main differences. First, we will be using a different LLM to generate the responses; however, this change should not produce material differences given that it is a model with similar capabilities to that used in the original study. Furthermore, in the article, they also performed the same study using an open-source Llama model to find similar results. Second, we are recruiting a much smaller sample size in comparison to the original study, which had 725 participants. Third, we are adding an additional validation to ensure that the participants provided an emotional response. 
 
 ### Methods Addendum (Post Data Collection)
 
@@ -107,7 +107,7 @@ library(lme4)
 library(lmerTest)
 
 #### Import data
-all_data <-  read.csv("data/pilota/pilota_data_filtered.csv")
+all_data <-  read.csv("data/pilotb/pilotb_data_filtered-anon.csv")
 ```
 
 
@@ -116,10 +116,10 @@ all_data <-  read.csv("data/pilota/pilota_data_filtered.csv")
 all_data_cleaned <- all_data %>% 
   filter(is_correct == 1) |> # pull out unnecessary rows for analysis
   select('Empathy_1', 'Condition', 'cognitive', 'affective', 'motivational',
-       'general_empathy', 'positive_resonance') # select relevant columns
+       'general_empathy', 'positive_resonance', 'other_source') # select relevant columns
 
 #### Prepare data for analysis - create columns etc.
-Q1_filtered <- filter(all_data_cleaned, abs(as.numeric(scale(all_data_cleaned$Empathy_1)))<=2.5)
+Q1_filtered <- filter(all_data_cleaned, abs(as.numeric(scale(all_data_cleaned$Empathy_1)))<=5)
 Resonance_filtered <- filter(all_data_cleaned, abs(as.numeric(scale(all_data_cleaned$positive_resonance)))<=2.5)
 
 
@@ -138,16 +138,97 @@ filtered_data$empathy_type <- factor(filtered_data$empathy_type,
 ### Confirmatory analysis
 First, we conduct two t-tests comparing perceived empathy and positive resonance between conditions. 
 
+
 ```{r}
 empathy_ttest <- t.test(formula = Empathy_1~Condition, data = Q1_filtered)
 print(empathy_ttest)
 ```
+
+```{r}
+Q1PlotViolinE1 <- 
+ggplot(data = Q1_filtered, aes(x = Condition, y = general_empathy,
+                                                    fill = Condition, color = Condition))+
+  ggdist::stat_halfeye( # for distributions
+    xmax = 3, # creates distance between them - the max height
+    adjust = 1, # adjust bandwidth
+    justification = -.3, # less close to boxplot
+    alpha = 0.6,
+    # remove the slub interval
+    .width = 0,
+    point_colour = NA) + 
+  geom_boxplot(color = "black", 
+               width = 0.25,
+               # removing outliers
+               outlier.color = NA,
+               alpha = 0.8)+
+  ggdist::stat_dots(aes(fill = Condition), side = "left", 
+                    justification = (1.2), 
+                    binwidth = 0.15, overflow = "compress")+
+  scale_color_manual(values = c("indianred1","darkturquoise"))+
+  scale_fill_manual(values = c("indianred1","darkturquoise"))+
+  theme(axis.text.x = element_text(face = "bold", size = 13),
+        legend.position = "none")+
+  #geom_point(aes(fill = Condition),shape=21, position=position_jitterdodge(0.2), inherit.aes = T)+
+  stat_summary(geom = "errorbar", fun.data = mean_cl_normal,
+               position = position_dodge(.75), linewidth=.3, width =.1, colour="black")+
+  stat_summary(fun=mean,  geom="point",
+               shape=4, size=2, colour="black",
+               position = position_dodge(0.75))+
+  xlab("Condition")+
+  ylim(c(0,11))+
+  ylab("General Empathy")+
+  theme_classic() +
+  ggtitle("Effect of Condition on Perceived Empathy")
+
+Q1PlotViolinE1
+```
+
 
 
 ```{r}
 resonance_ttest <- t.test(formula = positive_resonance~Condition, data = Resonance_filtered)
 print(resonance_ttest)
 ```
+
+```{r}
+PosResPlotE1 <- ggplot(data = Resonance_filtered, aes(x = Condition, y = positive_resonance,
+                                                    fill = Condition, color = Condition))+
+  ggdist::stat_halfeye( # for distributions
+    xmax = 3, # creates distance between them - the max height
+    adjust = 1, # adjust bandwidth
+    justification = -.3, # less close to boxplot
+    alpha = 0.6,
+    # remove the slub interval
+    .width = 0,
+    point_colour = NA) + 
+  geom_boxplot(color = "black", 
+               width = 0.25,
+               # removing outliers
+               outlier.color = NA,
+               alpha = 0.8)+
+  ggdist::stat_dots(aes(fill = Condition), side = "left", 
+                    justification = (1.2), 
+                    binwidth = 0.15, overflow = "compress")+
+  scale_color_manual(values = c("indianred1","darkturquoise"))+
+  scale_fill_manual(values = c("indianred1","darkturquoise"))+
+  theme(axis.text.x = element_text(face = "bold", size = 13),
+        legend.position = "none")+
+  #geom_point(aes(fill = Condition),shape=21, position=position_jitterdodge(0.2), inherit.aes = T)+
+  stat_summary(geom = "errorbar", fun.data = mean_cl_normal,
+               position = position_dodge(.75), linewidth=.3, width =.1, colour="black")+
+  stat_summary(fun=mean,  geom="point",
+               shape=4, size=2, colour="black",
+               position = position_dodge(0.75))+
+  xlab("Condition")+
+  ylab("Positivity Resonance")+
+  theme_classic() +
+  ggtitle("Effect of Condition on Positivity Resonance")
+
+
+PosResPlotE1
+ggsave("PosResPlotE1.png", PosResPlotE1, width = 5, height = 5)
+```
+
 
 ```{r}
 model <- lmer(empathy.s~Condition*empathy_type+(1|ID),data=filtered_data)
@@ -157,11 +238,18 @@ summary(model)
 
 The analyses as specified in the analysis plan.  
 
-*Side-by-side graph with original graph is ideal here*
-
 ### Exploratory analyses
 
-Any follow-up analyses desired (not required).  
+```{r}
+ggplot(data = Q1_filtered, aes(x=other_source, y=general_empathy, color=Condition)) +
+  geom_point() + 
+  geom_smooth(method = "lm") +
+  ylab("Perceived empathy from response")+
+  xlab("Human aided by AI / AI edited by human")+
+  theme_classic()
+```
+ 
+ 
 
 ## Discussion
 
