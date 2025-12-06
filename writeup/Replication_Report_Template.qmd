@@ -80,19 +80,14 @@ Finally, to see whether condition affected different types of empathy (e.g., cog
 There are three main differences. First, we will be using a different LLM (Gemini-2.5-Flash instead of GPT 4-0613) to generate the responses. We select Gemini-2.5-Flash due to practical cost constraints with the replication study, as Gemini offers a more generous rate limit for lower tiered API accounts compared to OpenAI. We select Gemini-2.5-Flash as it is a more cost-efficient model while still having capabilities comparable to GPT-4. This change should not produce material differences given that it is a model with similar capabilities to that used in the original study. Furthermore, in the article, they also performed the same study using an open-source Llama model to find similar results. Second, we are recruiting a much smaller sample size of 350 participants in comparison to the original study, which had 725 participants. Third, we are adding an additional validation to ensure that the participants provided a description of a recent emotional event.  Since the LLM will generate a response regardless of whether the participant inputs an emotional response, we require a post-hoc verification that the participants' input matched our question. Thus, I will manually review the submitted responses and remove those that do not describe a recent event. 
 
 ### Methods Addendum (Post Data Collection)
-
-You can comment this section out prior to final report with data collection.
-
 #### Actual Sample
-  Sample size, demographics, data exclusions based on rules spelled out in analysis plan
+I recruited 348 participants on Prolific. After excluding participants who failed the attention check (N=66), did not provide an emotional response to the LLM (N=2), or did not receive a response from the LLM responding to their experience (N=8), I was left with a total of 272 participants (median age, 46.5; 64.7% female; 75.4% White, 9.6% Black; 7.4% Asian; 4.4% mixed; 2.9% other) for the final analysis. There were 140 participants in the Human condition and 132 in the AI condition. Compared to Rubin et al., our participants are skewed older (compared to a mean age of 28.42) and have higher proportion of females (compared to 53%). 
+
 
 #### Differences from pre-data collection methods plan
-  Any differences from what was described as the original plan, or “none”.
-
+ I originally planned to only screen for participants who did not provide an emotional experience to the LLM. However, this screening did not account for the fact that the LLM could provide responses that were unrelated to the response thus impacting our manipulation. For example, in one trial, a participant responded that an emotional experience was "Asking about natal charts"; however, the model interpreted this query as the participant seeking information about what natal charts are and provided a description to the participant. 
 
 ## Results
-
-
 ### Data preparation
 
 Data preparation following the analysis plan.
@@ -105,9 +100,10 @@ Data preparation following the analysis plan.
 library(tidyverse)
 library(lme4)
 library(lmerTest)
+library(ggpubr)
 
 #### Import data
-all_data <-  read.csv("data/pilotb/pilotb_data_filtered-anon.csv")
+all_data <-  read.csv("data/final_data-anon_filtered.csv")
 ```
 
 
@@ -115,7 +111,7 @@ all_data <-  read.csv("data/pilotb/pilotb_data_filtered-anon.csv")
 #### Data exclusion / filtering
 all_data_cleaned <- all_data %>% 
   filter(is_correct == 1) |> # pull out unnecessary rows for analysis
-  select('Empathy_1', 'Condition', 'cognitive', 'affective', 'motivational',
+  select('Empathy_1', 'Condition', 'overall', 'cognitive', 'affective', 'motivational',
        'general_empathy', 'positive_resonance', 'other_source') # select relevant columns
 
 #### Prepare data for analysis - create columns etc.
@@ -133,21 +129,46 @@ data_for_model$empathy.s <- scale(data_for_model$empathy)
 filtered_data <- data_for_model[abs(data_for_model$empathy.s)<=2.5,]
 filtered_data$empathy_type <- factor(filtered_data$empathy_type, 
                                   levels = c("cognitive","affective","motivational"))
+
+moderator_data <- all_data_cleaned
+moderator_data$other_source_z <- scale(moderator_data$other_source)
 ```
+
 
 ### Confirmatory analysis
-First, we conduct two t-tests comparing perceived empathy and positive resonance between conditions. 
-
-
 ```{r}
-empathy_ttest <- t.test(formula = Empathy_1~Condition, data = Q1_filtered)
-print(empathy_ttest)
+library(papaja)
+library(effsize)
+library(emmeans)
 ```
 
+First, I will reproduce the main statistical analyses from Rubin et al.'s Study 1a. 
+
+#### General Empathy
+
+To start, I will conduct  Welch's t-test on the general empathy question. 
+
+```{r}
+empathy_ttest <- t.test(formula = overall~Condition, data = Q1_filtered)
+res <- apa_print(empathy_ttest)
+empathy_cohensd <- cohen.d(overall ~ Condition, data = Q1_filtered)
+empathy_ttest
+```
+On average both groups found the responses to be empathetic. In the AI condition, the mean perceived empathy of the response was 8.03 out of 10, and in the Human condition, the mean perceived empathy was 8.94. There was a significant difference between the means between conditions, `r apa_print(empathy_ttest)$statistic` with a Cohen's d equal to `r round(empathy_cohensd$estimate, 2)`. This result mirrors findings from Rubin et al., who find a $t_{685.77} = -4.56$, $p < .001$, Cohen's $d = 0.34$.   
+
+Next, we provide a violin plot comparing the perceived general empathy in the AI condition and Human condition. 
 ```{r}
 Q1PlotViolinE1 <- 
-ggplot(data = Q1_filtered, aes(x = Condition, y = general_empathy,
-                                                    fill = Condition, color = Condition))+
+ggplot(data = Q1_filtered, aes(x = Condition, y = overall, fill = Condition, color = Condition))+
+  geom_boxplot(color = "black", 
+               width = 0.25,
+               # removing outliers
+               outlier.color = NA,
+               alpha = 0.8)+
+  ggdist::stat_dots(aes(fill = Condition), side = "left", 
+                    dotsize = 0.1, 
+                    position = position_nudge(x = -0.2),
+                    binwidth = 0.15, overflow = "compress")+
   ggdist::stat_halfeye( # for distributions
     xmax = 3, # creates distance between them - the max height
     adjust = 1, # adjust bandwidth
@@ -155,40 +176,48 @@ ggplot(data = Q1_filtered, aes(x = Condition, y = general_empathy,
     alpha = 0.6,
     # remove the slub interval
     .width = 0,
-    point_colour = NA) + 
-  geom_boxplot(color = "black", 
-               width = 0.25,
-               # removing outliers
-               outlier.color = NA,
-               alpha = 0.8)+
-  ggdist::stat_dots(aes(fill = Condition), side = "left", 
-                    justification = (1.2), 
-                    binwidth = 0.15, overflow = "compress")+
+    point_colour = NA) +
   scale_color_manual(values = c("indianred1","darkturquoise"))+
   scale_fill_manual(values = c("indianred1","darkturquoise"))+
   theme(axis.text.x = element_text(face = "bold", size = 13),
         legend.position = "none")+
-  #geom_point(aes(fill = Condition),shape=21, position=position_jitterdodge(0.2), inherit.aes = T)+
   stat_summary(geom = "errorbar", fun.data = mean_cl_normal,
                position = position_dodge(.75), linewidth=.3, width =.1, colour="black")+
   stat_summary(fun=mean,  geom="point",
                shape=4, size=2, colour="black",
                position = position_dodge(0.75))+
   xlab("Condition")+
-  ylim(c(0,11))+
-  ylab("General Empathy")+
-  theme_classic() +
-  ggtitle("Effect of Condition on Perceived Empathy")
-
+  ylim(c(0,11.5))+
+  ylab("General empathy in response")+
+  theme_classic(base_size = 14, base_family="Helvetica") +
+  theme(legend.position = "none") +
+  stat_compare_means(aes(
+    label = paste0(
+      "p",
+      scales::label_pvalue()(..p..)
+    )
+  )) +
+  ggtitle("Effect of condition on perceived empathy")
 Q1PlotViolinE1
 ```
 
 
+#### Positivity Resonance
+
+Next, I will run a set of confirmatory analyses on positivity resonance, which is a mean over three dimensions: mutual warmth and concern, mutual sense of feeling energized and uplifted, and a mutual sense of trust and respect. Each of these dimensions is rated on a scale from 0 - 100. 
+
+Mirroring our analyses for general empathy, we conduct a Welch's t-test on positivity resonance. 
 
 ```{r}
-resonance_ttest <- t.test(formula = positive_resonance~Condition, data = Resonance_filtered)
-print(resonance_ttest)
+res_ttest <- t.test(formula = positive_resonance~Condition, data = Resonance_filtered)
+res_cohensd <- cohen.d(positive_resonance~Condition, data = Resonance_filtered)
+
+print(res_cohensd$estimate)
+print(res_ttest)
 ```
+On average both groups found the responses to be somewhat positively resonance. In the AI condition, the mean perceived empathy of the response was 69.7 out of 100, and in the Human condition, the mean perceived empathy was 77.6. There was a significant difference between the means between conditions, `r apa_print(res_ttest)$statistic` with a Cohen's $d$ equal to `r round(res_cohensd$estimate, 2)`. This result is similar to the findings from Rubin et al., who find a $t(694) = -5.63$, $p < .001$, Cohen's $d = 0.43$ albeit with a slightly smaller effect size.  
+
+Again, we provide the violin plots for positive resonance. 
 
 ```{r}
 PosResPlotE1 <- ggplot(data = Resonance_filtered, aes(x = Condition, y = positive_resonance,
@@ -221,42 +250,62 @@ PosResPlotE1 <- ggplot(data = Resonance_filtered, aes(x = Condition, y = positiv
                position = position_dodge(0.75))+
   xlab("Condition")+
   ylab("Positivity Resonance")+
-  theme_classic() +
-  ggtitle("Effect of Condition on Positivity Resonance")
+  theme_classic(base_size = 13, base_family="Helvetica") +
+  theme(legend.position = "none") +
+  stat_compare_means(method = "t.test") +
+  ylim(c(0,105))+
+  ggtitle("Effect of condition on positivity resonance")
 
 
 PosResPlotE1
-ggsave("PosResPlotE1.png", PosResPlotE1, width = 5, height = 5)
 ```
 
+### Aspects of Empathy
 
 ```{r}
-model <- lmer(empathy.s~Condition*empathy_type+(1|ID),data=filtered_data)
-summary(model)
+
+model_inter <- lmer(empathy.s ~ Condition * empathy_type + (1 | ID), data = filtered_data)
+
+anova_out <- as.data.frame(anova(model_inter))
+anova_out$Effect <- rownames(anova_out)
+cond <- filter(anova_out, Effect == "Condition")
+cond_p <- cond$`Pr(>F)`
+fvalue <- cond$`F value`
+emp <- filter(anova_out, Effect == "empathy_type")
+emp_fvalue <- emp$`F value`
+names(anova_out)[names(anova_out) == "Pr(>F)"] <- "p"   # rename p-value column
+
+emm <- emmeans(model_inter, ~ Condition * empathy_type)
+
+conts1   <- contrast(emm, adjust = "bonferroni", method = "pairwise", by = "empathy_type")
+emm_diff <- as.data.frame(summary(conts1)) 
 ```
 
 
-The analyses as specified in the analysis plan.  
+Similar to Rubin et al., our analysis reveals a significant main effect of condition (*F*(`r cond$NumDF`, `r round(cond$DenDF, 2)`) = `r round(fvalue,2)`, *p* = `r signif(cond_p,3)`). However, unlike Rubin et al., we find there is a significant effect of aspects of empathy (*F*(`r emp$NumDF`, `r round(emp$DenDF,2)`) = `r round(emp_fvalue,2)`, *p* < .001). 
+
+Post-hoc pairwise contrasts showed that the AI–Human difference shows that for cognitive aspects of empathy, the difference between conditions is smaller and not statistically significant, *t*(`r emm_diff$df[emm_diff$empathy_type=="cognitive"]`) = `r round(emm_diff$t.ratio[emm_diff$empathy_type=="cognitive"], 2)`, *p* = `r signif(emm_diff$p.value[emm_diff$empathy_type=="cognitive"], 3)`. In contrast, the difference was larger and significant for affective empathy and motivational empathy. While Rubin et al. did not observe this finding in Study 1a, they did find the same pattern in Study 1b. 
 
 ### Exploratory analyses
+We conduct an exploratory analysis to understand whether our results are moderated by whether participants believe an AI aided in generating the human response or a human aided in generated the AI response. This belief was captured on a 10-point Likert scale where 0 corresponded to no aid from the other source at all and 10 corresponded to heavy aid from the other source. We do not find a significant interaction between condition and participant's belief about other sources assisting the response generation. 
 
 ```{r}
-ggplot(data = Q1_filtered, aes(x=other_source, y=general_empathy, color=Condition)) +
-  geom_point() + 
-  geom_smooth(method = "lm") +
-  ylab("Perceived empathy from response")+
-  xlab("Human aided by AI / AI edited by human")+
-  theme_classic()
+model <- lm(general_empathy~Condition*other_source_z,data=moderator_data)
+summary(model)
+
+slopes <- as.data.frame(summary(emtrends(model, ~ Condition, var="other_source_z")))
+
+interaction_slope <- coef(model)[["ConditionHuman:other_source_z"]]
 ```
- 
- 
+
 
 ## Discussion
 
 ### Summary of Replication Attempt
 
-Open the discussion section with a paragraph summarizing the primary result from the confirmatory analysis and the assessment of whether it replicated, partially replicated, or failed to replicate the original result.  
+The primary finding was that participants rate responses they perceive as being from a human as more empathetic compared to responses they perceive as being generated by AI with an effect size of $d=0.34$. The primary statistical test did replicate in this project. I conducted a Welch's t-test between the Human and AI conditions, finding that the responses in the Human condition were rated as significantly more empathetic than the AI conditions. In fact, the effect size, $d=-0.44$ identified in this project, is larger than that in the original study. 
+
 
 ### Commentary
+The results from this project succeeded in replicating the results on empathy (described above) and positivity resonance from Study 1a. This outcome suggests that the result from Rubin et al. is robust even with different models and as model capabilities. Interestingly, the additional analysis exploring the different aspects of empathy (cognitive, affective, and motivational) found that there was a significant effect of empathy type on perceived empathy. In the original study, Rubin et al. found a null effect here although in later studies in their paper, they report similar results to us. Thus, our replication results provide evidence for their later findings, which did not appear in the original Study 1a. Another exploratory analysis I conducted was understanding whether the results are moderated by whether participants believe an AI aided in generating the human response or vice versa. I expected that our results would mirror what Rubin et al. and find that in the Human condition, the more participants though an AI was involved, the less empathetic they perceived the response. However, while the interaction effect is negative, it is not statistically significant. It is possible that this result is due to the fact that our sample size is much smaller compared to those used in Rubin et al. I also wonder whether there are changing societal perceptions toward AI usage as these technologies become more prevalent. That is, people find it more permissible for others to use AI in tasks and thus there is not a significant reduction in the perceived empathy. Finally, I am grateful to the main author (Matan Rubin) who not only has replicable code and data for the project on OSF but also responded to my emails and provided direct feedback on my study paradigm.
 
-Add open-ended commentary (if any) reflecting (a) insights from follow-up exploratory analysis, (b) assessment of the meaning of the replication (or not) - e.g., for a failure to replicate, are the differences between original and present study ones that definitely, plausibly, or are unlikely to have been moderators of the result, and (c) discussion of any objections or challenges raised by the current and original authors about the replication attempt.  None of these need to be long.
