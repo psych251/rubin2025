@@ -27,7 +27,8 @@ Original Paper: <https://github.com/psych251/rubin2025/blob/main/original_paper/
 
 Experimental Paradigm: <https://stanforduniversity.qualtrics.com/jfe/form/SV_1YAwJsT5JNf428u>
 
-Pre-registration: <https://osf.io/sncag/overview>
+Pre-registration: <https://osf.io/n37rt/overview>
+Note: For some reason, my Github repo was not showing up in the original pre-registration. It should be available in this link! 
 
 ## Methods
 
@@ -58,12 +59,12 @@ for (power in powers) {
 
 
 ### Planned Sample
-Based on the power analyses for the more conservative effect size (Cohen's *d* = .30), I will collect data from 350 participants and data collection will stop once complete data from all 350 participants has been collected from Prolific. The experiment should take about 4 minutes to complete.
+Assuming a conservative effect size (Cohen’s d = .30), a sample size of 350 participants provides power greater than 80% at $\alpha$ = .05. Data collection will stop once complete data from all 350 participants has been collected from Prolific. The experiment should take about 4 minutes to complete.
 
 ### Materials
 The participants are asked to describe an emotional experience and then showed a response generated using a large language model (LLMs). Given the stochastic nature of LLMs and the different inputs that participants provide, the responses the model provides will vary. Nonetheless, we use the prompt provided by the authors in the SI when generating responses. 
 
-We deviate slightly from the original work's material in that we use Gemini-2.5.-Flash to generate responses rather than GPT-4o. These models should be similar in capabilities and are both closed-sourced models. 
+We deviate slightly from the original work's material in that we use Gemini-2.5.-Flash to generate responses rather than GPT-4. These models should be similar in capabilities and are both closed-sourced models. 
 
 ### Procedure	
 
@@ -315,5 +316,5 @@ The primary finding was that participants rate responses they perceive as being 
 
 
 ### Commentary
-The results from this project succeeded in replicating the results on empathy (described above) and positivity resonance from Study 1a. This outcome suggests that the results from Rubin et al. are robust even with different models (i.e., Gemini-2.5-Flash rather than GPT-4) and as model capabilities improve. Interestingly, the additional analysis exploring the different aspects of empathy (cognitive, affective, and motivational) found that there was a significant effect of empathy type on perceived empathy. In the original study, Rubin et al. found a null effect here although in later studies in their paper, they report similar results to us. Thus, our replication results provide evidence for their later findings, which did not appear in the original Study 1a. Another exploratory analysis I conducted was understanding whether the results are moderated by whether participants believe an AI aided in generating the human response or vice versa. I expected that our results would mirror what Rubin et al., finding that in the Human condition, the more participants thought an AI was involved, the less empathic they perceived the response. However, while the interaction effect is negative, it is not statistically significant. It is possible that this result is due to the fact that our sample size is much smaller compared to that used in Rubin et al. I also wonder whether there are changing societal perceptions toward AI usage as these technologies become more prevalent. That is, people find it more permissible for others to use AI in tasks and thus there is not a significant reduction in the perceived empathy. Finally, I am grateful to the main author (Matan Rubin) who not only has replicable code and data for the project available on OSF but also responded to my emails to provide direct feedback on my study paradigm.
+The results from this project succeeded in replicating the results on empathy (described above) and positivity resonance from Study 1a. This outcome suggests that the results from Rubin et al. are robust even with different models (i.e., Gemini-2.5-Flash rather than GPT-4) and as model capabilities improve. Interestingly, the additional analysis exploring the different aspects of empathy (cognitive, affective, and motivational) found that there was a significant effect of empathy type on perceived empathy. In the original study, Rubin et al. found a null effect here although in later studies in their paper, they report similar results to us. Thus, our replication results provide evidence for their later findings, which did not appear in the original Study 1a. Another exploratory analysis I conducted was understanding whether the results are moderated by whether participants believe an AI aided in generating the human response or vice versa. I expected that our results would mirror what Rubin et al., finding that in the Human condition, the more participants thought an AI was involved, the less empathic they perceived the response. However, while the interaction effect is negative, it is not statistically significant. It is possible that this result is due to the fact that our sample size is much smaller compared to that used in Rubin et al.'s work. I also wonder whether there are changing societal perceptions toward AI usage as these technologies become more prevalent. That is, people find it more permissible for others to use AI to assist in tasks, and thus there is not a significant reduction in the perceived empathy so long as they believe the response still originates from another human. It would be interesting to see whether participants' AI usage moderates this relationship. Finally, I am grateful to the main author (Matan Rubin) who not only has replicable code and data for the project available on OSF but also responded to my emails to provide direct feedback on my study paradigm.
 
